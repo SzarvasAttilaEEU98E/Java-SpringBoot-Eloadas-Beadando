@@ -26,7 +26,7 @@ public class MnbSoapService {
     // SOAP XML-válasz feldolgozásáért felelős osztály
     private final MnbSoapResponseParser parser = new MnbSoapResponseParser();
 
-    public String lekerArfolyamok(
+    public List<MnbSoapArfolyam> lekerArfolyamok(
             String deviza,
             LocalDate kezdoDatum,
             LocalDate vegDatum) throws Exception {
@@ -82,6 +82,6 @@ public class MnbSoapService {
         }
 
         // 6. Egyelőre visszaadjuk az eredeti SOAP XML-választ
-        return response.body();
+        return arfolyamok;
     }
 }

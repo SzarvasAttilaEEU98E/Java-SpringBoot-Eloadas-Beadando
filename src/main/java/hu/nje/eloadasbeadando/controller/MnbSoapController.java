@@ -5,6 +5,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import hu.nje.eloadasbeadando.model.MnbSoapArfolyam;
+import java.util.List;
+
 import java.io.IOException;
 import java.time.LocalDate;
 
@@ -18,16 +21,15 @@ public class MnbSoapController
     }
 
     @GetMapping("/soap")
-    public String lekerArfolyamok(
+    public List<MnbSoapArfolyam> lekerArfolyamok(
             @RequestParam String deviza,
             @RequestParam LocalDate kezdoDatum,
-            @RequestParam LocalDate vegDatum
-    ) throws Exception
-    {
-      return mnbSoapService.lekerArfolyamok(
-              deviza,
-              kezdoDatum,
-              vegDatum
-      );
+            @RequestParam LocalDate vegDatum) throws Exception {
+
+        return mnbSoapService.lekerArfolyamok(
+                deviza,
+                kezdoDatum,
+                vegDatum
+        );
     }
 }
