@@ -22,7 +22,7 @@ public class MnbSoapController
             @RequestParam String deviza,
             @RequestParam LocalDate kezdoDatum,
             @RequestParam LocalDate vegDatum
-    ) throws IOException, InterruptedException
+    ) throws Exception
     {
       return mnbSoapService.lekerArfolyamok(
               deviza,
