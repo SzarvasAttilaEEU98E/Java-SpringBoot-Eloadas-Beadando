@@ -6,10 +6,13 @@ import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
-import java.time.LocalDate;
+import java.util.Set;
 
 @Component
 public class OandaHistoryRequest {
+
+    private static final Set<String> ENGEDÉLYEZETT_GRANULARITY =
+            Set.of("M15", "H1", "H4", "D", "W");
 
     private final String apiUrl;
     private final String apiToken;
@@ -22,44 +25,29 @@ public class OandaHistoryRequest {
         this.apiToken = apiToken;
     }
 
-    // Történelmi árfolyamlekérdezés összeállítása
     public HttpRequest keszitTortenelmiKeres(
             String devizapar,
-            LocalDate kezdoDatum,
-            LocalDate vegDatum) {
+            String granularity) {
 
-        // Csak szabályos OANDA devizapár-formátumot fogadunk el
         if (devizapar == null ||
                 !devizapar.matches("[A-Z]{3}_[A-Z]{3}")) {
-
             throw new IllegalArgumentException(
-                    "Érvénytelen devizapár."
+                    "Érvénytelen devizapár!"
             );
         }
 
-        if (kezdoDatum == null ||
-                vegDatum == null ||
-                kezdoDatum.isAfter(vegDatum)) {
-
+        if (!ENGEDÉLYEZETT_GRANULARITY.contains(granularity)) {
             throw new IllegalArgumentException(
-                    "Érvénytelen dátumtartomány."
+                    "Érvénytelen Granularity érték!"
             );
         }
-
-        // A kezdődátum 00:00 UTC időpontja
-        String from = kezdoDatum + "T00:00:00Z";
-
-        // A végdátumot is tartalmazó intervallum
-        String to = vegDatum.plusDays(1) + "T00:00:00Z";
 
         String url = apiUrl
                 + "/v3/instruments/"
                 + devizapar
-                + "/candles"
-                + "?price=M"
-                + "&granularity=D"
-                + "&from=" + from
-                + "&to=" + to;
+                + "/candles?price=M"
+                + "&granularity=" + granularity
+                + "&count=10";
 
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))

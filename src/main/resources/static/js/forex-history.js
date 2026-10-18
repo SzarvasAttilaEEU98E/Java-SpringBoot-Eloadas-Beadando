@@ -1,180 +1,167 @@
 
-document.addEventListener("DOMContentLoaded", function () {
+const historyForm = document.getElementById("historyForm");
+const devizaparSelect = document.getElementById("devizapar");
+const granularitySelect = document.getElementById("granularity");
+const hibaUzenet = document.getElementById("hibaUzenet");
+const historyTabla = document.getElementById("historyTabla");
+const lekerdezesGomb = document.getElementById("lekerdezesGomb");
 
-    const historyForm = document.getElementById("historyForm");
-    const devizaparInput = document.getElementById("devizapar");
-    const kezdoDatumInput = document.getElementById("kezdoDatum");
-    const vegDatumInput = document.getElementById("vegDatum");
-    const hibaUzenet = document.getElementById("hibaUzenet");
+let historyChart = null;
 
-    const chartCanvas = document.getElementById("historyChart");
+function hibaMegjelenitese(uzenet) {
+    hibaUzenet.textContent = uzenet;
+    hibaUzenet.classList.remove("d-none");
+}
 
-    // A korábbi grafikon példányát ebben tároljuk
-    let historyChart = null;
+function hibaElrejtese() {
+    hibaUzenet.textContent = "";
+    hibaUzenet.classList.add("d-none");
+}
 
-    // Alapértelmezett dátumok beállítása
-    const maiDatum = new Date();
+function tablaMegjelenitese(arfolyamok) {
+    historyTabla.innerHTML = "";
 
-    const vegDatum = new Date(maiDatum);
-    vegDatum.setDate(vegDatum.getDate() - 1);
+    if (arfolyamok.length === 0) {
+        const sor = document.createElement("tr");
+        const cella = document.createElement("td");
 
-    const kezdoDatum = new Date(vegDatum);
-    kezdoDatum.setDate(kezdoDatum.getDate() - 30);
+        cella.colSpan = 5;
+        cella.className = "text-center";
+        cella.textContent = "Nem található historikus adat.";
 
-    // Dátum formázása YYYY-MM-DD alakra, helyi idő szerint
-    function datumFormazas(datum) {
-        const ev = datum.getFullYear();
-        const honap = String(datum.getMonth() + 1).padStart(2, "0");
-        const nap = String(datum.getDate()).padStart(2, "0");
-
-        return `${ev}-${honap}-${nap}`;
+        sor.appendChild(cella);
+        historyTabla.appendChild(sor);
+        return;
     }
 
-    kezdoDatumInput.value = datumFormazas(kezdoDatum);
-    vegDatumInput.value = datumFormazas(vegDatum);
+    arfolyamok.forEach(arfolyam => {
+        const sor = document.createElement("tr");
 
-    // Az űrlap elküldésének kezelése
-    historyForm.addEventListener("submit", async function (event) {
+        const ertekek = [
+            new Date(arfolyam.time).toLocaleString("hu-HU"),
+            arfolyam.open,
+            arfolyam.high,
+            arfolyam.low,
+            arfolyam.close
+        ];
 
-        event.preventDefault();
-
-        hibaUzenet.classList.add("d-none");
-        hibaUzenet.textContent = "";
-
-        const devizapar = devizaparInput.value;
-        const kezdoDatum = kezdoDatumInput.value;
-        const vegDatum = vegDatumInput.value;
-
-        // Dátumtartomány ellenőrzése
-        if (kezdoDatum > vegDatum) {
-            hibaMegjelenites(
-                "A kezdő dátum nem lehet későbbi, mint a végső dátum."
-            );
-            return;
-        }
-
-        const params = new URLSearchParams({
-            devizapar: devizapar,
-            kezdoDatum: kezdoDatum,
-            vegDatum: vegDatum
+        ertekek.forEach(ertek => {
+            const cella = document.createElement("td");
+            cella.textContent = ertek ?? "-";
+            sor.appendChild(cella);
         });
 
-        try {
-
-            // Saját Spring Boot REST API meghívása
-            const response = await fetch(
-                `/forex/history?${params.toString()}`
-            );
-
-            if (!response.ok) {
-                throw new Error(
-                    `Sikertelen árfolyamlekérdezés. HTTP: ${response.status}`
-                );
-            }
-
-            // JSON-válasz feldolgozása
-            const arfolyamok = await response.json();
-
-            if (!Array.isArray(arfolyamok) || arfolyamok.length === 0) {
-                throw new Error(
-                    "A kiválasztott időszakban nem található árfolyamadat."
-                );
-            }
-
-            // Grafikon megjelenítése
-            grafikonMegjelenites(arfolyamok, devizapar);
-
-        } catch (error) {
-
-            hibaMegjelenites(error.message);
-
-        }
+        historyTabla.appendChild(sor);
     });
+}
 
-    // Hibaüzenet megjelenítése
-    function hibaMegjelenites(uzenet) {
-        hibaUzenet.textContent = uzenet;
-        hibaUzenet.classList.remove("d-none");
+function grafikonMegjelenitese(arfolyamok) {
+    const canvas = document.getElementById("historyChart");
+
+    if (historyChart !== null) {
+        historyChart.destroy();
+        historyChart = null;
     }
 
-    // Történelmi árfolyamgrafikon kirajzolása
-    function grafikonMegjelenites(arfolyamok, devizapar) {
+    if (arfolyamok.length === 0) {
+        return;
+    }
 
-        // Csak a lezárt gyertyákat használjuk
-        const lezartArfolyamok = arfolyamok.filter(
-            arfolyam => arfolyam.complete
-        );
+    const idopontok = arfolyamok.map(arfolyam =>
+        new Date(arfolyam.time).toLocaleString("hu-HU")
+    );
 
-        if (lezartArfolyamok.length === 0) {
-            throw new Error("Nincsenek lezárt gyertyaadatok.");
-        }
+    const zaroArak = arfolyamok.map(arfolyam =>
+        Number(arfolyam.close)
+    );
 
-        // Időpontok előkészítése
-        const datumok = lezartArfolyamok.map(
-            arfolyam => new Date(arfolyam.time).toLocaleDateString("hu-HU")
-        );
-
-        // Záróárfolyamok előkészítése
-        const zaroArfolyamok = lezartArfolyamok.map(
-            arfolyam => Number(arfolyam.close)
-        );
-
-        // Korábbi grafikon törlése
-        if (historyChart !== null) {
-            historyChart.destroy();
-        }
-
-        // Új Chart.js grafikon létrehozása
-        historyChart = new Chart(chartCanvas, {
-
-            type: "line",
-
-            data: {
-                labels: datumok,
-
-                datasets: [{
-                    label: `${devizapar.replace("_", "/")} záróárfolyam`,
-                    data: zaroArfolyamok,
-                    borderColor: "#0d6efd",
-                    backgroundColor: "rgba(13, 110, 253, 0.1)",
-                    borderWidth: 2,
-                    tension: 0.2,
-                    pointRadius: 3,
-                    fill: true
-                }]
+    historyChart = new Chart(canvas, {
+        type: "line",
+        data: {
+            labels: idopontok,
+            datasets: [{
+                label: "Záróár",
+                data: zaroArak,
+                borderColor: "#1abc9c",
+                backgroundColor: "rgba(26, 188, 156, 0.1)",
+                tension: 0.2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true
+                }
             },
-
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-
-                plugins: {
-                    legend: {
-                        display: true
-                    },
-
-                    tooltip: {
-                        mode: "index",
-                        intersect: false
-                    }
-                },
-
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: "Dátum"
-                        }
-                    },
-
-                    y: {
-                        title: {
-                            display: true,
-                            text: "Záróárfolyam"
-                        }
-                    }
+            scales: {
+                y: {
+                    beginAtZero: false
                 }
             }
-        });
+        }
+    });
+}
+
+async function historikusArfolyamokLekerdezese(event) {
+    event.preventDefault();
+
+    hibaElrejtese();
+
+    const devizapar = devizaparSelect.value;
+    const granularity = granularitySelect.value;
+
+    const params = new URLSearchParams({
+        devizapar: devizapar,
+        granularity: granularity
+    });
+
+    lekerdezesGomb.disabled = true;
+    lekerdezesGomb.textContent = "Lekérdezés folyamatban...";
+
+    try {
+        const response = await fetch(
+            `/forex/history?${params.toString()}`
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Sikertelen lekérdezés. HTTP: ${response.status}`
+            );
+        }
+
+        const arfolyamok = await response.json();
+
+        if (!Array.isArray(arfolyamok)) {
+            throw new Error("Érvénytelen API-válasz.");
+        }
+
+        // Az OANDA időrendben adja vissza a gyertyákat.
+        // A legutolsó 10 gyertyát jelenítjük meg.
+        const utolsoTiz = arfolyamok.slice(-10);
+
+        tablaMegjelenitese(utolsoTiz);
+        grafikonMegjelenitese(utolsoTiz);
+
+    } catch (error) {
+        historyTabla.innerHTML = "";
+
+        if (historyChart !== null) {
+            historyChart.destroy();
+            historyChart = null;
+        }
+
+        hibaMegjelenitese(error.message);
+
+    } finally {
+        lekerdezesGomb.disabled = false;
+        lekerdezesGomb.textContent =
+            "Utolsó 10 ár lekérdezése";
     }
-});
+}
+
+historyForm.addEventListener(
+    "submit",
+    historikusArfolyamokLekerdezese
+);
