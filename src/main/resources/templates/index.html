@@ -24,17 +24,17 @@
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/}" href="/">Főoldal</a></li>
-                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/soap}" href="/soap">SOAP</a></li>
+                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/soap/page}" href="/soap/page">SOAP</a></li>
                 <li class="nav-item dropdown mx-0 mx-lg-1">
                     <a class="nav-link dropdown-toggle py-3 px-0 px-lg-3 rounded" href="#" id="forexDropdown"
                        role="button" data-bs-toggle="dropdown" aria-expanded="false">Forex</a>
                     <ul class="dropdown-menu" aria-labelledby="forexDropdown">
-                        <li><a class="dropdown-item" th:href="@{/forex/account}" href="/forex/account">Számlainformációk</a></li>
-                        <li><a class="dropdown-item" th:href="@{/forex/prices}" href="/forex/prices">Aktuális ár</a></li>
-                        <li><a class="dropdown-item" th:href="@{/forex/history}" href="/forex/history">Historikus ár</a></li>
-                        <li><a class="dropdown-item" th:href="@{/forex/open}" href="/forex/open">Pozíció nyitása</a></li>
-                        <li><a class="dropdown-item" th:href="@{/forex/positions}" href="/forex/positions">Nyitott pozíciók</a></li>
-                        <li><a class="dropdown-item" th:href="@{/forex/close}" href="/forex/close">Pozíció zárása</a></li>
+                        <li><a class="dropdown-item" th:href="@{/forex/account/page}" href="/forex/account/page">Számlainformációk</a></li>
+                        <li><a class="dropdown-item" th:href="@{/forex/pricing/page}" href="/forex/pricing/page">Aktuális ár</a></li>
+                        <li><a class="dropdown-item" th:href="@{/forex/history/page}" href="/forex/history/page">Historikus ár</a></li>
+                        <li><a class="dropdown-item" th:href="@{/forex/order/page}" href="/forex/order/page">Pozíció nyitása</a></li>
+                        <li><a class="dropdown-item" th:href="@{/forex/positions/page}" href="/forex/positions/page">Nyitott pozíciók</a></li>
+                        <li><a class="dropdown-item" th:href="@{/forex/positions/page}" href="/forex/positions/page">Pozíció zárása</a></li>
                     </ul>
                 </li>
                 <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#bemutatas">Bemutatás</a></li>
@@ -72,7 +72,7 @@
                             <i class="fas fa-chart-area fa-3x text-primary mb-3"></i>
                             <h3 class="h5">MNB SOAP</h3>
                             <p>Devizaárfolyamok lekérdezése dátumtartomány alapján, grafikonon is.</p>
-                            <a class="btn btn-primary" th:href="@{/soap}" href="/soap">SOAP menü</a>
+                            <a class="btn btn-primary" th:href="@{/soap/page}" href="/soap/page">SOAP menü</a>
                         </div>
                     </div>
                 </div>
@@ -82,7 +82,7 @@
                             <i class="fas fa-wallet fa-3x text-primary mb-3"></i>
                             <h3 class="h5">Forex számla</h3>
                             <p>OANDA gyakorlószámla információinak megtekintése.</p>
-                            <a class="btn btn-primary" th:href="@{/forex/account}" href="/forex/account">Számlainformációk</a>
+                            <a class="btn btn-primary" th:href="@{/forex/account/page}" href="/forex/account/page">Számlainformációk</a>
                         </div>
                     </div>
                 </div>
@@ -92,8 +92,8 @@
                             <i class="fas fa-coins fa-3x text-primary mb-3"></i>
                             <h3 class="h5">Forex árfolyamok</h3>
                             <p>Instrumentumok aktuális és historikus árainak lekérdezése.</p>
-                            <a class="btn btn-primary" th:href="@{/forex/prices}" href="/forex/prices">Aktuális ár</a>
-                            <a class="btn btn-outline-primary mt-2" th:href="@{/forex/history}" href="/forex/history">Historikus ár</a>
+                            <a class="btn btn-primary" th:href="@{/forex/pricing/page}" href="/forex/pricing/page">Aktuális ár</a>
+                            <a class="btn btn-outline-primary mt-2" th:href="@{/forex/history/page}" href="/forex/history/page">Historikus ár</a>
                         </div>
                     </div>
                 </div>
@@ -103,7 +103,7 @@
                             <i class="fas fa-arrow-trend-up fa-3x text-primary mb-3"></i>
                             <h3 class="h5">Pozíció nyitása</h3>
                             <p>Long és Short pozíció nyitása piaci áron.</p>
-                            <a class="btn btn-primary" th:href="@{/forex/open}" href="/forex/open">Nyitás</a>
+                            <a class="btn btn-primary" th:href="@{/forex/order/page}" href="/forex/order/page">Nyitás</a>
                         </div>
                     </div>
                 </div>
@@ -113,7 +113,7 @@
                             <i class="fas fa-list fa-3x text-primary mb-3"></i>
                             <h3 class="h5">Nyitott pozíciók</h3>
                             <p>Aktív kereskedési pozíciók áttekintése táblázatban.</p>
-                            <a class="btn btn-primary" th:href="@{/forex/positions}" href="/forex/positions">Pozíciók</a>
+                            <a class="btn btn-primary" th:href="@{/forex/positions/page}" href="/forex/positions/page">Pozíciók</a>
                         </div>
                     </div>
                 </div>
@@ -122,8 +122,8 @@
                         <div class="card-body p-4">
                             <i class="fas fa-check-circle fa-3x text-primary mb-3"></i>
                             <h3 class="h5">Pozíció zárása</h3>
-                            <p>Meglévő kereskedési pozíció lezárása tradeId alapján.</p>
-                            <a class="btn btn-primary" th:href="@{/forex/close}" href="/forex/close">Zárás</a>
+                            <p>Meglévő Long vagy Short pozíció lezárása devizapár alapján az OANDA Practice számlán.</p>
+                            <a class="btn btn-primary" th:href="@{/forex/positions/page}" href="/forex/positions/page">Zárás</a>
                         </div>
                     </div>
                 </div>
@@ -142,7 +142,7 @@
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <p class="lead">Ez a böngészőből használható, helyi gépen futó alkalmazás Java 25 és Spring Boot használatával készül. Az MNB SOAP webszolgáltatásából devizaárfolyamokat kérdez le, és Chart.js segítségével jeleníti meg azokat.</p>
-                    <p class="lead mb-0">Az OANDA API-n keresztül Forex számlainformációkat, árfolyamokat és kereskedési műveleteket fog kezelni. A funkciók fejlesztése folyamatban van.</p>
+                    <p class="lead mb-0">Az OANDA API-n keresztül Forex számlainformációkat, árfolyamokat és kereskedési műveleteket fog kezelni. A számlaadatok, árfolyamok és pozíciókezelés külön webes felületeken érhetők el; a kereskedési műveletek végrehajtását nyitott piacon szükséges ellenőrizni.</p>
                 </div>
             </div>
         </div>

@@ -7,8 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeController {
 
+    // Az alkalmazás főoldalának megjelenítése
     @GetMapping("/")
-    public String index() {
+    public String fooldal() {
         return "index";
     }
 }
