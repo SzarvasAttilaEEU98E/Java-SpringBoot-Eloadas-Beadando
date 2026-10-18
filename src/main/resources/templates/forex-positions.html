@@ -20,7 +20,7 @@
 
     <p class="text-muted">
         Az OANDA gyakorló számlán jelenleg nyitott
-        Forex pozíciók megtekintése.
+        Forex pozíciók megtekintése és lezárása.
     </p>
 
     <div class="card shadow-sm">
@@ -37,6 +37,11 @@
                         class="btn btn-primary">
                     Frissítés
                 </button>
+            </div>
+
+            <div id="sikerUzenet"
+                 class="alert alert-success d-none"
+                 role="status">
             </div>
 
             <div id="hibaUzenet"
@@ -60,6 +65,7 @@
                         <th>Long eredmény</th>
                         <th>Short eredmény</th>
                         <th>Összes eredmény</th>
+                        <th>Műveletek</th>
                     </tr>
                     </thead>
 
@@ -72,7 +78,8 @@
     </div>
 
     <div class="mt-4">
-        <a href="/forex/order/page" class="btn btn-outline-primary">
+        <a href="/forex/order/page"
+           class="btn btn-outline-primary">
             Long / Short megbízások
         </a>
     </div>
