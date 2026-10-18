@@ -1,10 +1,90 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>OANDA számlaadatok</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
 </head>
+
 <body>
-$END$
+
+<div class="container mt-5">
+
+    <h1>OANDA Forex számlaadatok</h1>
+
+    <p class="text-muted">
+        OANDA Practice számla adatainak megjelenítése
+    </p>
+
+    <div class="card mt-4">
+
+        <div class="card-header">
+            Gyakorló számla
+        </div>
+
+        <div class="card-body">
+
+            <table class="table table-striped">
+
+                <tbody>
+
+                <tr>
+                    <th>Számlaazonosító</th>
+                    <td id="accountId">-</td>
+                </tr>
+
+                <tr>
+                    <th>Pénznem</th>
+                    <td id="currency">-</td>
+                </tr>
+
+                <tr>
+                    <th>Egyenleg</th>
+                    <td id="balance">-</td>
+                </tr>
+
+                <tr>
+                    <th>Nettó eszközérték (NAV)</th>
+                    <td id="nav">-</td>
+                </tr>
+
+                <tr>
+                    <th>Felhasználható margin</th>
+                    <td id="marginAvailable">-</td>
+                </tr>
+
+                <tr>
+                    <th>Nyitott ügyletek száma</th>
+                    <td id="openTradeCount">-</td>
+                </tr>
+
+                <tr>
+                    <th>Nyitott pozíciók száma</th>
+                    <td id="openPositionCount">-</td>
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- OANDA számlaadatok JavaScript -->
+<script src="/js/forex-account.js"></script>
+
 </body>
 </html>
