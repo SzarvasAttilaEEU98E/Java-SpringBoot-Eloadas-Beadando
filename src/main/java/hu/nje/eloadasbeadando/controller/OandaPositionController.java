@@ -24,7 +24,7 @@ public class OandaPositionController {
         this.oandaPositionService = oandaPositionService;
     }
 
-    // Nyitott Forex pozíciók lekérdezése
+    // Meglévő funkció: nyitott Forex pozíciók lekérdezése
     @GetMapping(
             value = "/forex/positions",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -32,11 +32,25 @@ public class OandaPositionController {
     public ResponseEntity<List<OandaPosition>> lekerNyitottPoziciok()
             throws IOException, InterruptedException {
 
-        // Service meghívása
         List<OandaPosition> poziciok =
                 oandaPositionService.lekerNyitottPoziciok();
 
-        // Feldolgozott pozíciók visszaadása JSON formátumban
         return ResponseEntity.ok(poziciok);
+    }
+
+    // ÚJ FUNKCIÓ: nyitott Forex ügyletek lekérdezése
+    @GetMapping(
+            value = "/forex/trades",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<String> lekerNyitottTradek()
+            throws IOException, InterruptedException {
+
+        String jsonValasz =
+                oandaPositionService.lekerNyitottTradek();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(jsonValasz);
     }
 }

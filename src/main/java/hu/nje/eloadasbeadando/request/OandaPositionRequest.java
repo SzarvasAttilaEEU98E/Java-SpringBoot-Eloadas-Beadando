@@ -25,13 +25,29 @@ public class OandaPositionRequest {
         this.accountId = accountId;
     }
 
-    // Nyitott Forex pozíciók lekérdezésének összeállítása
+    // Meglévő funkció: nyitott Forex pozíciók lekérdezése
     public HttpRequest keszitNyitottPoziciokKeres() {
 
         String url = apiUrl
                 + "/v3/accounts/"
                 + accountId
                 + "/openPositions";
+
+        return HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + apiToken)
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+    }
+
+    // ÚJ FUNKCIÓ: nyitott Forex ügyletek lekérdezése
+    public HttpRequest keszitNyitottTradeKeres() {
+
+        String url = apiUrl
+                + "/v3/accounts/"
+                + accountId
+                + "/openTrades";
 
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))

@@ -30,30 +30,63 @@ public class OandaPositionService {
         this.httpClient = HttpClient.newHttpClient();
     }
 
-    // Nyitott Forex pozíciók lekérdezése
+    // Meglévő funkció: nyitott Forex pozíciók lekérdezése
     public List<OandaPosition> lekerNyitottPoziciok()
             throws IOException, InterruptedException {
 
-        // HTTP-kérés összeállítása
         HttpRequest request =
                 oandaPositionRequest.keszitNyitottPoziciokKeres();
 
-        // HTTP-kérés elküldése az OANDA API-nak
-        HttpResponse<String> response = httpClient.send(
+        String jsonValasz = elkuldLekeres(
                 request,
-                HttpResponse.BodyHandlers.ofString()
+                "pozíciólekérdezés"
         );
 
-        // HTTP-válasz ellenőrzése
+        // A meglévő Parser feldolgozza a pozíciókat
+        return parser.feldolgoz(jsonValasz);
+    }
+
+    // ÚJ FUNKCIÓ: nyitott Forex ügyletek lekérdezése
+    public String lekerNyitottTradek()
+            throws IOException, InterruptedException {
+
+        HttpRequest request =
+                oandaPositionRequest.keszitNyitottTradeKeres();
+
+        // Egyelőre a teljes OANDA JSON-választ adjuk vissza.
+        // A következő lépésben ebből készítünk táblázatot.
+        return elkuldLekeres(
+                request,
+                "ügyletlekérdezés"
+        );
+    }
+
+    // Közös HTTP-kérés küldése és válaszellenőrzés
+    private String elkuldLekeres(
+            HttpRequest request,
+            String muvelet)
+            throws IOException, InterruptedException {
+
+        HttpResponse<String> response;
+
+        try {
+            response = httpClient.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        }
+
         if (response.statusCode() != 200) {
             throw new IOException(
-                    "Az OANDA pozíciólekérdezés sikertelen. "
+                    "Az OANDA " + muvelet + " sikertelen. "
                             + "HTTP státuszkód: "
                             + response.statusCode()
             );
         }
 
-        // JSON-válasz feldolgozása Java-objektumokká
-        return parser.feldolgoz(response.body());
+        return response.body();
     }
 }
