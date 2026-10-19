@@ -14,6 +14,9 @@ import java.net.http.HttpResponse;
 @Service
 public class OandaPositionCloseService {
 
+    private static final String PRACTICE_API =
+            "https://api-fxpractice.oanda.com";
+
     private final OandaPositionCloseRequest oandaPositionCloseRequest;
     private final HttpClient httpClient;
     private final String apiUrl;
@@ -28,32 +31,61 @@ public class OandaPositionCloseService {
         this.httpClient = HttpClient.newHttpClient();
     }
 
-    // Long vagy Short Forex pozíció lezárása
-    public String lezarPozicio(String devizapar, String irany)
-            throws IOException, InterruptedException {
+    // Ellenőrizzük, hogy csak OANDA Practice API-t használunk
+    private void ellenorizPracticeKornyezet() {
 
-        // Biztonsági ellenőrzés:
-        // kizárólag OANDA Practice környezetben engedélyezett
-        if (!"https://api-fxpractice.oanda.com".equals(apiUrl)) {
+        if (!PRACTICE_API.equals(apiUrl)) {
             throw new IllegalStateException(
                     "Pozíciózárás csak OANDA Practice környezetben engedélyezett."
             );
         }
+    }
 
-        // HTTP PUT-kérés összeállítása
+    // Meglévő funkció: Long vagy Short pozíció lezárása
+    public String lezarPozicio(
+            String devizapar,
+            String irany)
+            throws IOException, InterruptedException {
+
+        ellenorizPracticeKornyezet();
+
         HttpRequest request =
                 oandaPositionCloseRequest.keszitPozicioZaras(
                         devizapar,
                         irany
                 );
 
-        // HTTP-kérés elküldése az OANDA API-nak
-        HttpResponse<String> response = httpClient.send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-        );
+        return elkuldZarasiKeres(request);
+    }
 
-        // HTTP-válasz ellenőrzése
+    // ÚJ FUNKCIÓ: ügylet lezárása tradeId alapján
+    public String lezarTrade(long tradeId)
+            throws IOException, InterruptedException {
+
+        ellenorizPracticeKornyezet();
+
+        HttpRequest request =
+                oandaPositionCloseRequest.keszitTradeZaras(tradeId);
+
+        return elkuldZarasiKeres(request);
+    }
+
+    // Közös HTTP-küldési és válaszellenőrzési logika
+    private String elkuldZarasiKeres(HttpRequest request)
+            throws IOException, InterruptedException {
+
+        HttpResponse<String> response;
+
+        try {
+            response = httpClient.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        }
+
         if (response.statusCode() != 200) {
             throw new IOException(
                     "Az OANDA pozíciózárás sikertelen. "
@@ -62,7 +94,6 @@ public class OandaPositionCloseService {
             );
         }
 
-        // Az OANDA JSON-válaszának visszaadása
         return response.body();
     }
 }

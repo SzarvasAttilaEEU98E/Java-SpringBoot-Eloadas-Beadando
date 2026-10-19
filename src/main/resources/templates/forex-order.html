@@ -73,7 +73,7 @@
                         </select>
                     </div>
 
-                    <!-- Egységek száma -->
+                    <!-- Előjeles mennyiség -->
                     <div class="col-md-6">
 
                         <label for="units"
@@ -84,33 +84,36 @@
                         <input type="number"
                                id="units"
                                class="form-control"
-                               min="1"
+                               min="-100"
                                max="100"
                                step="1"
                                value="10"
                                required>
 
                         <div class="form-text">
-                            Engedélyezett mennyiség:
-                            1–100 egység.
+                            Pozitív szám: Long (vétel).
+                            Negatív szám: Short (eladás).
+                            Engedélyezett tartomány: -100 és 100,
+                            nulla kivételével.
                         </div>
                     </div>
 
                 </div>
 
-                <!-- Long / Short gombok -->
-                <div class="d-flex gap-3 mt-4">
+                <!-- A választott irány megjelenítése -->
+                <div id="iranyInformacio"
+                     class="alert alert-info mt-4 mb-0"
+                     role="status">
+                    Kiválasztott irány: Long (vétel)
+                </div>
 
-                    <button type="button"
-                            id="longButton"
-                            class="btn btn-success">
-                        Long (Vétel)
-                    </button>
+                <!-- Egyetlen megbízásküldő gomb -->
+                <div class="mt-4">
 
-                    <button type="button"
-                            id="shortButton"
-                            class="btn btn-danger">
-                        Short (Eladás)
+                    <button type="submit"
+                            id="orderButton"
+                            class="btn btn-primary">
+                        Pozíció nyitása
                     </button>
 
                 </div>
@@ -151,7 +154,8 @@
     <!-- Visszalépés -->
     <div class="mt-4 text-center">
 
-        <a href="/"
+        <a th:href="@{/}"
+           href="/"
            class="btn btn-outline-secondary">
             Vissza a főoldalra
         </a>
@@ -161,7 +165,8 @@
 </div>
 
 <!-- Saját JavaScript -->
-<script src="/js/forex-order.js"></script>
+<script th:src="@{/js/forex-order.js}"
+        src="/js/forex-order.js"></script>
 
 </body>
 </html>

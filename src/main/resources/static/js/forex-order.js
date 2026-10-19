@@ -5,50 +5,88 @@ document.addEventListener("DOMContentLoaded", function () {
     const devizaparInput = document.getElementById("devizapar");
     const unitsInput = document.getElementById("units");
 
-    const longButton = document.getElementById("longButton");
-    const shortButton = document.getElementById("shortButton");
+    const orderButton = document.getElementById("orderButton");
+    const iranyInformacio = document.getElementById("iranyInformacio");
 
     const sikerUzenet = document.getElementById("sikerUzenet");
     const hibaUzenet = document.getElementById("hibaUzenet");
     const orderResult = document.getElementById("orderResult");
 
-    // Megakadályozzuk az űrlap hagyományos elküldését
-    orderForm.addEventListener("submit", function (event) {
+    // A mennyiség alapján megjelenítjük a kereskedési irányt
+    function iranyFrissitese() {
+
+        const units = Number(unitsInput.value);
+
+        iranyInformacio.classList.remove(
+            "alert-info",
+            "alert-success",
+            "alert-danger",
+            "alert-warning"
+        );
+
+        if (unitsInput.value.trim() === "" ||
+            !Number.isInteger(units) ||
+            units === 0 ||
+            units < -100 ||
+            units > 100) {
+
+            iranyInformacio.textContent =
+                "Adj meg egy -100 és 100 közötti egész számot, nulla kivételével.";
+
+            iranyInformacio.classList.add("alert-warning");
+
+        } else if (units > 0) {
+
+            iranyInformacio.textContent =
+                "Kiválasztott irány: Long (vétel)";
+
+            iranyInformacio.classList.add("alert-success");
+
+        } else {
+
+            iranyInformacio.textContent =
+                "Kiválasztott irány: Short (eladás)";
+
+            iranyInformacio.classList.add("alert-danger");
+        }
+    }
+
+    // Mennyiség módosításakor frissítjük az irányt
+    unitsInput.addEventListener("input", iranyFrissitese);
+
+    // Kezdeti irány megjelenítése
+    iranyFrissitese();
+
+    // Az űrlap elküldése
+    orderForm.addEventListener("submit", async function (event) {
+
         event.preventDefault();
-    });
-
-    // Long gomb eseménykezelője
-    longButton.addEventListener("click", function () {
-        megbizasKuldes("long");
-    });
-
-    // Short gomb eseménykezelője
-    shortButton.addEventListener("click", function () {
-        megbizasKuldes("short");
-    });
-
-    // Megbízás feldolgozása és elküldése
-    async function megbizasKuldes(irany) {
 
         sikerUzenet.classList.add("d-none");
         hibaUzenet.classList.add("d-none");
 
-        const devizapar = devizaparInput.value;
-        const units = Number(unitsInput.value);
-
-        // Űrlap ellenőrzése
         if (!orderForm.reportValidity()) {
             return;
         }
 
-        if (!Number.isInteger(units) || units < 1 || units > 100) {
+        const devizapar = devizaparInput.value;
+        const units = Number(unitsInput.value);
+
+        // Mennyiség ellenőrzése
+        if (unitsInput.value.trim() === "" ||
+            !Number.isInteger(units) ||
+            units === 0 ||
+            units < -100 ||
+            units > 100) {
+
             hibaMegjelenites(
-                "Az egységek száma 1 és 100 közötti egész szám lehet."
+                "Az egységek száma -100 és 100 közötti egész szám lehet, nulla kivételével."
             );
+
             return;
         }
 
-        const iranySzoveg = irany === "long"
+        const iranySzoveg = units > 0
             ? "Long (vételi)"
             : "Short (eladási)";
 
@@ -65,9 +103,9 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Kétszeri kattintás megakadályozása
-        longButton.disabled = true;
-        shortButton.disabled = true;
+        // Többszöri kattintás megakadályozása
+        orderButton.disabled = true;
+        orderButton.textContent = "Megbízás küldése...";
 
         orderResult.textContent = "Megbízás feldolgozása...";
 
@@ -78,9 +116,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 units: units.toString()
             });
 
-            // Spring Boot REST API meghívása
+            // Az előjeles mennyiséget kezelő REST végpont
             const response = await fetch(
-                `/forex/order/${irany}?${params.toString()}`,
+                `/forex/order/signed?${params.toString()}`,
                 {
                     method: "POST",
                     headers: {
@@ -89,14 +127,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             );
 
+            const valaszSzoveg = await response.text();
+
             if (!response.ok) {
                 throw new Error(
-                    `A megbízás sikertelen. HTTP státuszkód: ${response.status}`
+                    `A megbízás sikertelen. HTTP státuszkód: ${response.status}. ` +
+                    valaszSzoveg.slice(0, 300)
                 );
             }
 
-            // OANDA válasz feldolgozása
-            const eredmeny = await response.json();
+            // OANDA JSON-válasz feldolgozása
+            const eredmeny = JSON.parse(valaszSzoveg);
 
             // Teljes válasz megjelenítése
             orderResult.textContent = JSON.stringify(
@@ -105,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 2
             );
 
-            // Végrehajtás ellenőrzése
+            // A HTTP 200 önmagában nem jelent végrehajtott megbízást
             if (eredmeny.orderFillTransaction) {
 
                 sikerUzenet.textContent =
@@ -115,21 +156,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
             } else if (eredmeny.orderCancelTransaction) {
 
+                const ok = eredmeny.orderCancelTransaction.reason
+                    || "Ismeretlen ok";
+
                 hibaMegjelenites(
-                    "Az OANDA törölte a megbízást. " +
+                    `Az OANDA törölte a megbízást. Ok: ${ok}. ` +
                     "Részletek az API-válaszban."
+                );
+
+            } else if (eredmeny.orderRejectTransaction) {
+
+                const ok = eredmeny.orderRejectTransaction.rejectReason
+                    || "Ismeretlen ok";
+
+                hibaMegjelenites(
+                    `Az OANDA elutasította a megbízást. Ok: ${ok}.`
                 );
 
             } else {
 
                 hibaMegjelenites(
                     "A megbízás állapota nem egyértelmű. " +
-                    "Ellenőrizd az OANDA-választ."
+                    "Ellenőrizd az OANDA-választ és a számla állapotát."
                 );
             }
 
         } catch (error) {
 
+            // Nem próbálkozunk automatikus újraküldéssel
             orderResult.textContent =
                 "A kérés eredménye nem ellenőrizhető.";
 
@@ -140,11 +194,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         } finally {
 
-            // Gombok újbóli engedélyezése
-            longButton.disabled = false;
-            shortButton.disabled = false;
+            orderButton.disabled = false;
+            orderButton.textContent = "Pozíció nyitása";
         }
-    }
+    });
 
     // Hibaüzenet megjelenítése
     function hibaMegjelenites(uzenet) {

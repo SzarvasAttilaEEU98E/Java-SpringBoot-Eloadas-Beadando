@@ -33,14 +33,12 @@ public class OandaOrderController {
             @RequestParam int units)
             throws IOException, InterruptedException {
 
-        // Long esetén pozitív egységszám szükséges
         if (units <= 0) {
             throw new IllegalArgumentException(
                     "Long megbízásnál pozitív egységszám szükséges."
             );
         }
 
-        // Pozitív egységszám továbbítása a Service-nek
         String valasz = oandaOrderService.kuldPiaciMegbizas(
                 devizapar,
                 units
@@ -59,17 +57,50 @@ public class OandaOrderController {
             @RequestParam int units)
             throws IOException, InterruptedException {
 
-        // A felhasználó pozitív mennyiséget ad meg
         if (units <= 0) {
             throw new IllegalArgumentException(
                     "Short megbízásnál pozitív egységszám szükséges."
             );
         }
 
-        // Negatív egységszám továbbítása a Service-nek
         String valasz = oandaOrderService.kuldPiaciMegbizas(
                 devizapar,
                 -units
+        );
+
+        return ResponseEntity.ok(valasz);
+    }
+
+    // ÚJ: előjeles mennyiség alapján történő pozíciónyitás
+    @PostMapping(
+            value = "/forex/order/signed",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<String> nyitElojelesPozicio(
+            @RequestParam String devizapar,
+            @RequestParam int units)
+            throws IOException, InterruptedException {
+
+        // A nulla nem érvényes, a maximális méret 100 egység
+        if (units == 0 || units < -100 || units > 100) {
+            throw new IllegalArgumentException(
+                    "A mennyiség -100 és 100 között lehet, nulla kivételével."
+            );
+        }
+
+        // Devizapár formátumának ellenőrzése
+        if (devizapar == null ||
+                !devizapar.matches("[A-Z]{3}_[A-Z]{3}")) {
+            throw new IllegalArgumentException(
+                    "Érvénytelen devizapár."
+            );
+        }
+
+        // A Service már kezeli az előjeles mennyiséget:
+        // pozitív = Long, negatív = Short
+        String valasz = oandaOrderService.kuldPiaciMegbizas(
+                devizapar,
+                units
         );
 
         return ResponseEntity.ok(valasz);

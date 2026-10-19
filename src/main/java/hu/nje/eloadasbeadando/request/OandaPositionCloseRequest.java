@@ -10,6 +10,9 @@ import java.net.http.HttpRequest;
 @Component
 public class OandaPositionCloseRequest {
 
+    private static final String PRACTICE_API =
+            "https://api-fxpractice.oanda.com";
+
     private final String apiUrl;
     private final String apiToken;
     private final String accountId;
@@ -24,18 +27,23 @@ public class OandaPositionCloseRequest {
         this.accountId = accountId;
     }
 
+    // Ellenőrizzük, hogy kizárólag gyakorlószámlán dolgozunk
+    private void ellenorizPracticeKornyezet() {
+
+        if (!PRACTICE_API.equals(apiUrl)) {
+            throw new IllegalStateException(
+                    "Pozíciózárás csak OANDA Practice környezetben engedélyezett."
+            );
+        }
+    }
+
+    // Meglévő funkció: Long vagy Short pozíció lezárása devizapár alapján
     public HttpRequest keszitPozicioZaras(
             String devizapar,
             String irany) {
 
-        // Csak OANDA Practice környezet
-        if (!"https://api-fxpractice.oanda.com".equals(apiUrl)) {
-            throw new IllegalStateException(
-                    "Pozíciózárás csak Practice környezetben engedélyezett."
-            );
-        }
+        ellenorizPracticeKornyezet();
 
-        // Devizapár ellenőrzése
         if (devizapar == null ||
                 !devizapar.matches("[A-Z]{3}_[A-Z]{3}")) {
             throw new IllegalArgumentException(
@@ -47,8 +55,10 @@ public class OandaPositionCloseRequest {
 
         if ("long".equalsIgnoreCase(irany)) {
             jsonBody = "{\"longUnits\":\"ALL\"}";
+
         } else if ("short".equalsIgnoreCase(irany)) {
             jsonBody = "{\"shortUnits\":\"ALL\"}";
+
         } else {
             throw new IllegalArgumentException(
                     "Az irány csak long vagy short lehet."
@@ -61,6 +71,36 @@ public class OandaPositionCloseRequest {
                 + "/positions/"
                 + devizapar
                 + "/close";
+
+        return HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + apiToken)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+    }
+
+    // ÚJ FUNKCIÓ: konkrét ügylet lezárása tradeId alapján
+    public HttpRequest keszitTradeZaras(long tradeId) {
+
+        ellenorizPracticeKornyezet();
+
+        if (tradeId <= 0) {
+            throw new IllegalArgumentException(
+                    "A tradeId csak pozitív egész szám lehet."
+            );
+        }
+
+        String url = apiUrl
+                + "/v3/accounts/"
+                + accountId
+                + "/trades/"
+                + tradeId
+                + "/close";
+
+        // Az ALL minden egységet lezár az adott ügyletből
+        String jsonBody = "{\"units\":\"ALL\"}";
 
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))

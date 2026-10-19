@@ -3,40 +3,70 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const tabla = document.getElementById("poziciokTabla");
     const frissitesButton = document.getElementById("frissitesButton");
+
     const sikerUzenet = document.getElementById("sikerUzenet");
     const hibaUzenet = document.getElementById("hibaUzenet");
     const uresLista = document.getElementById("uresLista");
 
+    const tradeCloseForm = document.getElementById("tradeCloseForm");
+    const tradeIdInput = document.getElementById("tradeId");
+    const tradeCloseButton = document.getElementById("tradeCloseButton");
+    const closeResult = document.getElementById("closeResult");
+
     let muveletFolyamatban = false;
 
-    // Üzenetek elrejtése
+    // Siker- és hibaüzenetek törlése
     function uzenetekTorlese() {
         sikerUzenet.classList.add("d-none");
         hibaUzenet.classList.add("d-none");
-        uresLista.classList.add("d-none");
+        sikerUzenet.textContent = "";
+        hibaUzenet.textContent = "";
     }
 
-    // Hibaüzenet megjelenítése
+    function sikerMegjelenitese(uzenet) {
+        hibaUzenet.classList.add("d-none");
+        sikerUzenet.textContent = uzenet;
+        sikerUzenet.classList.remove("d-none");
+    }
+
     function hibaMegjelenitese(uzenet) {
+        sikerUzenet.classList.add("d-none");
         hibaUzenet.textContent = uzenet;
         hibaUzenet.classList.remove("d-none");
     }
 
-    // Pozíciók lekérdezése
-    async function poziciokBetoltese() {
+    // Gombok zárolása a művelet alatt
+    function gombokAllapota(folyamatban) {
+
+        muveletFolyamatban = folyamatban;
+
+        frissitesButton.disabled = folyamatban;
+        tradeCloseButton.disabled = folyamatban;
+
+        tabla.querySelectorAll("button").forEach(function (button) {
+            button.disabled = folyamatban;
+        });
+    }
+
+    // Nyitott pozíciók lekérdezése
+    async function poziciokBetoltese(torolUzenetek = true) {
 
         if (muveletFolyamatban) {
             return;
         }
 
-        muveletFolyamatban = true;
-        frissitesButton.disabled = true;
-        frissitesButton.textContent = "Betöltés...";
+        gombokAllapota(true);
 
+        frissitesButton.textContent = "Betöltés...";
         tabla.replaceChildren();
-        uzenetekTorlese();
+        uresLista.classList.add("d-none");
+
+        if (torolUzenetek) {
+            uzenetekTorlese();
+        }
 
         try {
+
             const response = await fetch("/forex/positions");
 
             if (!response.ok) {
@@ -101,7 +131,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 shortButton.className = "btn btn-warning btn-sm";
                 shortButton.textContent = "Short lezárása";
 
-                // Csak létező pozíció zárható
                 longButton.disabled = Number(pozicio.longUnits) <= 0;
                 shortButton.disabled = Number(pozicio.shortUnits) >= 0;
 
@@ -121,16 +150,60 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
         } catch (error) {
+
             hibaMegjelenitese(error.message);
 
         } finally {
-            muveletFolyamatban = false;
-            frissitesButton.disabled = false;
+
+            gombokAllapota(false);
             frissitesButton.textContent = "Frissítés";
+
+            // Az eredetileg nem létező pozíciók gombjai
+            // továbbra is tiltva maradnak.
+            tabla.querySelectorAll("tr").forEach(function (sor) {
+                const cellak = sor.querySelectorAll("td");
+                const gombok = sor.querySelectorAll("button");
+
+                if (cellak.length < 3 || gombok.length < 2) {
+                    return;
+                }
+
+                gombok[0].disabled = Number(cellak[1].textContent) <= 0;
+                gombok[1].disabled = Number(cellak[2].textContent) >= 0;
+            });
         }
     }
 
-    // Long vagy Short pozíció lezárása
+    // Közös válaszfeldolgozás
+    async function valaszFeldolgozasa(response) {
+
+        const valaszSzoveg = await response.text();
+
+        let adat;
+
+        try {
+            adat = JSON.parse(valaszSzoveg);
+        } catch {
+            throw new Error(
+                "Nem sikerült értelmezni az OANDA válaszát. "
+                + "Ellenőrizd a számla állapotát."
+            );
+        }
+
+        closeResult.textContent = JSON.stringify(adat, null, 2);
+
+        if (!response.ok) {
+            throw new Error(
+                "A zárási művelet sikertelen. HTTP: "
+                + response.status
+                + ". Ellenőrizd a számla állapotát."
+            );
+        }
+
+        return adat;
+    }
+
+    // Long vagy Short pozíció lezárása devizapár alapján
     async function pozicioLezarasa(devizapar, irany) {
 
         if (muveletFolyamatban) {
@@ -149,16 +222,16 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        muveletFolyamatban = true;
-        frissitesButton.disabled = true;
+        gombokAllapota(true);
         uzenetekTorlese();
 
-        // A többi lezáró gomb letiltása
-        tabla.querySelectorAll("button").forEach(function (button) {
-            button.disabled = true;
-        });
+        closeResult.textContent = "Pozíciózárás folyamatban...";
+
+        let sikeresZaras = false;
+        let zarasiHiba = null;
 
         try {
+
             const url = "/forex/positions/close/"
                 + irany
                 + "?devizapar="
@@ -168,73 +241,138 @@ document.addEventListener("DOMContentLoaded", function () {
                 method: "PUT"
             });
 
-            const valaszSzoveg = await response.text();
+            const adat = await valaszFeldolgozasa(response);
 
-            let adat;
+            const vegrehajtva = irany === "long"
+                ? adat.longOrderFillTransaction
+                : adat.shortOrderFillTransaction;
 
-            try {
-                adat = JSON.parse(valaszSzoveg);
-            } catch {
+            if (!vegrehajtva) {
                 throw new Error(
-                    "Nem sikerült értelmezni az OANDA válaszát. "
-                    + "Ellenőrizd a számla állapotát újrapróbálkozás előtt."
+                    "Az OANDA nem igazolta vissza a pozíció lezárását."
                 );
             }
 
-            if (!response.ok) {
-                throw new Error(
-                    "A pozíciózárás sikertelen. HTTP: "
-                    + response.status
-                    + ". Ellenőrizd a számla állapotát."
-                );
-            }
-
-            // OANDA által visszaigazolt végrehajtás
-            const vegrehajtva =
-                irany === "long"
-                    ? adat.longOrderFillTransaction
-                    : adat.shortOrderFillTransaction;
-
-            if (vegrehajtva) {
-
-                // Lista újratöltése előtt feloldjuk a zárolást
-                muveletFolyamatban = false;
-
-                await poziciokBetoltese();
-
-                sikerUzenet.textContent =
-                    "A(z) " + devizapar + " "
-                    + iranySzoveg
-                    + " pozíció lezárását az OANDA visszaigazolta.";
-
-                sikerUzenet.classList.remove("d-none");
-
-            } else {
-
-                throw new Error(
-                    "Az OANDA nem igazolta vissza a pozíció lezárását. "
-                    + "Ellenőrizd a számla állapotát."
-                );
-            }
+            sikeresZaras = true;
 
         } catch (error) {
-            hibaMegjelenitese(error.message);
+            zarasiHiba = error.message;
+        }
 
-        } finally {
-            muveletFolyamatban = false;
-            frissitesButton.disabled = false;
+        gombokAllapota(false);
 
-            // A lista frissítésével visszaállítjuk a gombok állapotát
-            // akkor is, ha a zárás eredménye bizonytalan.
-            await poziciokBetoltese();
+        // Frissítjük a listát, de nem töröljük a művelet üzenetét
+        await poziciokBetoltese(false);
+
+        if (sikeresZaras) {
+            sikerMegjelenitese(
+                "A(z) " + devizapar + " "
+                + iranySzoveg
+                + " pozíció lezárását az OANDA visszaigazolta."
+            );
+        } else {
+            hibaMegjelenitese(
+                zarasiHiba
+                + " Ellenőrizd a számla állapotát újrapróbálkozás előtt."
+            );
         }
     }
 
+    // ÚJ: konkrét ügylet lezárása tradeId alapján
+    tradeCloseForm.addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        if (muveletFolyamatban) {
+            return;
+        }
+
+        if (!tradeCloseForm.reportValidity()) {
+            return;
+        }
+
+        const tradeIdSzoveg = tradeIdInput.value.trim();
+        const tradeId = Number(tradeIdSzoveg);
+
+        if (!/^[1-9]\d*$/.test(tradeIdSzoveg)
+            || !Number.isSafeInteger(tradeId)) {
+
+            hibaMegjelenitese(
+                "A tradeId csak pozitív egész szám lehet."
+            );
+            return;
+        }
+
+        const megerosites = window.confirm(
+            "Biztosan lezárod a(z) "
+            + tradeIdSzoveg
+            + " azonosítójú ügyletet az OANDA PRACTICE számlán?"
+        );
+
+        if (!megerosites) {
+            return;
+        }
+
+        gombokAllapota(true);
+        uzenetekTorlese();
+
+        closeResult.textContent = "Ügyletzárás folyamatban...";
+
+        let sikeresZaras = false;
+        let zarasiHiba = null;
+
+        try {
+
+            const response = await fetch(
+                "/forex/trades/"
+                + encodeURIComponent(tradeIdSzoveg)
+                + "/close",
+                {
+                    method: "PUT"
+                }
+            );
+
+            const adat = await valaszFeldolgozasa(response);
+
+            // Az OANDA trade-close válaszában
+            // az orderFillTransaction igazolja a teljesítést.
+            if (!adat.orderFillTransaction) {
+                throw new Error(
+                    "Az OANDA nem igazolta vissza az ügylet lezárását."
+                );
+            }
+
+            sikeresZaras = true;
+
+        } catch (error) {
+            zarasiHiba = error.message;
+        }
+
+        gombokAllapota(false);
+
+        // A pozíciók újratöltése nem törli az eredményüzenetet
+        await poziciokBetoltese(false);
+
+        if (sikeresZaras) {
+            sikerMegjelenitese(
+                "A(z) " + tradeIdSzoveg
+                + " azonosítójú ügyletet az OANDA sikeresen lezárta."
+            );
+
+            tradeIdInput.value = "";
+
+        } else {
+            hibaMegjelenitese(
+                zarasiHiba
+                + " Ellenőrizd a számla állapotát újrapróbálkozás előtt."
+            );
+        }
+    });
+
     // Frissítés gomb
-    frissitesButton.addEventListener(
-        "click",
-        poziciokBetoltese
-    );
+    frissitesButton.addEventListener("click", function () {
+        poziciokBetoltese();
+    });
 
     // Automatikus betöltés
     poziciokBetoltese();

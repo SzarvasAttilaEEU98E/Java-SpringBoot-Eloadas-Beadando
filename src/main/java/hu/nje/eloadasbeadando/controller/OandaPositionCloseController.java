@@ -5,6 +5,7 @@ import hu.nje.eloadasbeadando.service.OandaPositionCloseService;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +24,7 @@ public class OandaPositionCloseController {
         this.oandaPositionCloseService = oandaPositionCloseService;
     }
 
-    // Long pozíció lezárása
+    // Meglévő funkció: Long pozíció lezárása devizapár alapján
     @PutMapping(
             value = "/forex/positions/close/long",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -43,7 +44,7 @@ public class OandaPositionCloseController {
                 .body(jsonValasz);
     }
 
-    // Short pozíció lezárása
+    // Meglévő funkció: Short pozíció lezárása devizapár alapján
     @PutMapping(
             value = "/forex/positions/close/short",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -58,6 +59,32 @@ public class OandaPositionCloseController {
                         "short"
                 );
 
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(jsonValasz);
+    }
+
+    // ÚJ FUNKCIÓ: konkrét ügylet lezárása tradeId alapján
+    @PutMapping(
+            value = "/forex/trades/{tradeId}/close",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<String> lezarTrade(
+            @PathVariable long tradeId)
+            throws IOException, InterruptedException {
+
+        // A tradeId csak pozitív egész szám lehet
+        if (tradeId <= 0) {
+            throw new IllegalArgumentException(
+                    "A tradeId csak pozitív egész szám lehet."
+            );
+        }
+
+        // A Service végrehajtja az OANDA API-kérést
+        String jsonValasz =
+                oandaPositionCloseService.lezarTrade(tradeId);
+
+        // Az OANDA JSON-válaszát visszaadjuk a böngészőnek
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(jsonValasz);
